@@ -11,11 +11,7 @@ NAT instance, you must do the following:
 Create a security group for the NAT with outbound rules that specify the needed Internet
 resources by port, protocol, and IP address.
 Launch an Amazon Linux NAT AMI as an instance in a public subnet and associate it
-with the NAT security group.
-Disable the Source/Destination Check attribute of the NAT.
-Configure the route table associated with a private subnet to direct Internet-bound traffic
-to the NAT instance (for example, i-1a2b3c4d).
-Allocate an EIP and associate it with the NAT instance.
+te an EIP and associate it with the NAT instance.
 This configuration allows instances in private subnets to send outbound Internet
 communication, but it prevents the instances from receiving inbound traffic initiated by
 someone on the Internet.
