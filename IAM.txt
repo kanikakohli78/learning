@@ -1,0 +1,286 @@
+1.Using IAM roles for Amazon EC2 removes the need to store AWS credentials in a
+configuration file.
+
+2.
+Amazon EC2 Roles
+
+When the Amazon EC2 instance is launched, the role is assigned to the instance.
+When the application running on the instance uses the Application Programming Interface
+(API) to access the Amazon S3 bucket, it assumes the role assigned to the instance and
+obtains a temporary token that it sends to the API. The process of obtaining the temporary
+token and passing it to the API is handled automatically by most of the AWS SDKs, allowing
+the application to make a call to access the Amazon S3 bucket without worrying about
+authentication. In addition to being easy for the developer, this removes any need to store an
+access key in a configuration file. Also, because the API access uses a temporary token, there
+is no fixed access key that must be rotated.
+
+Cross-Account Access
+
+Another common use case for IAM roles is to grant access to AWS resources to IAM users in
+other AWS accounts.You can set up an IAM role with the
+permissions you want to grant to users in the other account,then users in the other account
+can assume that role to access your resources.This is highly recommended as a best practice,
+as opposed to distributing access keys outside your organization.
+
+
+Federation
+
+Many organizations already have an identity repository outside of AWS and would rather
+leverage that repository than create a new and largely duplicate repository of IAM users.
+Similarly, web-based applications may want to leverage web-based identities such as
+Facebook, Google, or Login with Amazon. IAM Identity Providers provide the ability to
+federate these outside identities with IAM and assign privileges to those users authenticated
+outside of IAM.
+
+IAM can integrate with two different types of outside Identity Providers (IdP).
+	For federating
+	web identities such as Facebook, Google, or Login with Amazon, IAM supports integration via
+	OpenID Connect (OIDC). 
+	
+	For federating internal identities, such as Active Directory
+	or LDAP, IAM supports integration via Security Assertion Markup Language 2.0 (SAML).
+	
+In each case, federation works by returning a temporary token
+associated with a role to the IdP for the authenticated identity to use for calls to the AWS API.
+
+3.Traits of AWS Principals
+Principal : Traits
+Root User : Cannot be limited
+            Permanent
+IAM Users : Access controlled by policy
+			Durable
+			Can be removed by IAM administrator
+Roles/Temporary Security Tokens : Access controlled by policy Temporary
+								  Expire after specific time interval
+								  Requesting a temporary security token requires specifying how long the
+								  token will exist before it expires. The range of a temporary security token lifetime is 15
+								  minutes to 36 hours
+							
+4.There are three ways that IAM authenticates a principal:
+	
+	User Name/Password—When a principal represents a human interacting with the
+					   console, the human will provide a user name/password pair to verify their identity.
+    Access Key—An access key is a combination of an access key ID (20 characters) and an
+			   access secret key (40 characters). 	
+	Access Key/Session Token-When a process operates under an assumed role, the
+							 temporary security token provides an access key for authentication. In addition to the
+							 access key (remember that it consists of two parts), the token also includes a session
+							 token. Calls to AWS must include both the two-part access key and the session token to
+							 authenticate.
+							 
+5.Authorization:. The process of specifying exactly what actions a principal
+can and cannot perform is called authorization. Authorization is handled in IAM by defining
+specific privileges in policies and associating those policies with principals.
+A policy is a JSON document that fully defines a set of permissions to access and
+manipulate AWS resources.
+
+6.Policy documents contain one or more permissions, with each
+permission defining:
+	Effect—A single word: Allow or Deny.
+
+	Service—For what service does this permission apply? Most AWS Cloud services
+			support granting access through IAM, including IAM itself.
+			
+	Resource—The resource value specifies the specific AWS infrastructure for which this
+			 permission applies. This is specified as an Amazon Resource Name (ARN). The format
+			 for an ARN varies slightly between services, but the basic format is:
+			 "arn:aws:service:region:account-id:[resourcetype:]resource"
+			 
+			 For some services, wildcard values are allowed; for instance, an Amazon S3 ARN could have a
+			 resource of foldername\* to indicate all objects in the specified folder.
+			 
+			 Sample ARNs:
+			 
+			 Resource ARN Format
+Amazon S3 Bucket arn:aws:s3:us-east-1:123456789012:my_corporate_bucket/*
+IAM User arn:aws:iam:us-east-1:123456789012:user/David
+Amazon DynamoDB Table arn:aws:dynamodb:us-east-1:123456789012:table/tablename
+	
+	Action—The action value specifies the subset of actions within a service that the
+           permission allows or denies. For instance, a permission may grant access to any readbased action for Amazon S3.
+		   A set of actions can be specified with an enumerated list or
+		   by using wildcards (Read*).
+		   
+    Condition—The condition value optionally defines one or more additional restrictions
+				that limit the actions allowed by the permission.For instance, the permission might
+				contain a condition that limits the ability to access a resource to calls that come from a
+				specific IP address range. Another condition could restrict the permission only to apply
+				during a specific time interval. There are many types of permissions that allow a rich
+				variety of functionality that varies between services.
+				
+				
+A sample policy is shown in the following listing. This policy allows a principal to list the
+objects in a specific bucket and to retrieve those objects, but only if the call comes from a
+specific IP address.
+{
+"Version": "2012–10–17",
+"Statement": [
+{
+"Sid": "Stmt1441716043000",
+"Effect": "Allow", <- This policy grants access
+"Action": [ <- Allows identities to list
+"s3:GetObject", <- and get objects in
+"s3:ListBucket" <- the S3 bucket
+],
+"Condition": {
+"IpAddress": { <- Only from a specific
+"aws:SourceIp": "192.168.0.1" <- IP Address
+}
+},
+"Resource": [
+"arn:aws:s3:::my_public_bucket/*" <- Only this bucket
+]
+}
+]
+}
+
+7.MFA can be assigned to any IAM user account, whether the account represents a person or
+application. When a person using an IAM user configured with MFA attempts to access the
+AWS Management Console, after providing their password they will be prompted to enter the
+current code displayed on their MFA device before being granted access. An application using
+an IAM user configured with MFA must query the application user to provide the current
+code, which the application will then pass to the API.
+
+8.Resolving Multiple Permissions
+
+1. Initially the request is denied by default.
+2. All the appropriate policies are evaluated; if there is an explicit “deny” found in any
+policy, the request is denied and evaluation stops.
+3. If no explicit “deny” is found and an explicit “allow” is found in any policy, the request is
+allowed.
+4. If there are no explicit “allow” or “deny” permissions found, then the default “deny” is
+maintained and the request is denied.
+
+The only exception to this rule is if an AssumeRole call includes a role and a policy, the policy
+cannot expand the privileges of the role (for example, the policy cannot override any
+permission that is denied by default in the role).
+
+9.IAM user accounts can be further secured by rotating keys, implementing MFA, and adding
+conditions to policies.				
+			 
+			 
+10.Security Status includes:
+	1.delete your root account access
+	2.Activate MFA on your root account
+	3.Create individual IAM users
+	4.Use groups to assign permissions.
+	5.Apply an IAM password policy.		
+	
+11.When an Amazon EC2 instance is associated with an IAM
+role, SDK calls acquire a temporary security token based on the role associated with the
+instance and use that token to access AWS resources.
+
+AWS IAM
+
+1.The control provided by IAM is
+granular enough to limit a single user to the ability to perform a single action on a specific
+resource from a specific IP address during a specific time window.
+
+2.Applications can be
+granted access to AWS resources whether they are running on-premises or in the cloud.
+
+3.IAM is not an identity store/authorization system for your applications.The
+permissions that you assign are permissions to manipulate AWS infrastructure, not
+permissions within your application.
+
+If you are migrating an existing on-premises
+application that already has its own user repository and authentication/authorization
+mechanism, then that should continue to work when you deploy on AWS and is probably
+the right choice.
+If your application identities are based on Active Directory, your onpremises Active Directory can be extended into the cloud to continue to fill that need.
+A
+great solution for using Active Directory in the cloud is AWS Directory Service, which is
+an Active Directory-compatible directory service that can work on its own or integrate
+with your on-premises Active Directory.
+
+Finally, if you are working with a mobile app,
+consider Amazon Cognito for identity management for mobile applications.
+
+
+4.IAM is not operating system identity management.
+Remember that under the
+shared responsibility model, you are in control of your operating system console and
+configuration. Whatever mechanism you currently use to control access to your server
+infrastructure will continue to work on Amazon Elastic Compute Cloud (Amazon EC2)
+instances, whether that is managing individual machine login accounts or a directory
+service such as Active Directory or Lightweight Directory Access Protocol (LDAP). You
+can run an Active Directory or LDAP server on Amazon EC2, or you can extend your onpremises system into the cloud. 
+AWS Directory Service will also work well to provide
+Active Directory functionality in the cloud as a service, whether standalone or integrated
+with your existing Active Directory
+
+5.
+Use Case :Technology Solutions
+Operating System Access : Active Directory LDAP Machine-specific accounts
+Application Access : Active Directory
+					 Application User Repositories
+					Amazon Cognito
+AWS Resources : IAM
+
+6. A principal is an IAM entity that is allowed
+to interact with AWS resources. 
+A principal can be permanent or temporary, and it can
+represent a human or an application. There are three types of principals: root users, IAM
+users, and roles/temporary security tokens.
+
+	ROOT USER:When you first create an AWS account, you begin with only a single sign-in principal that has
+complete access to all AWS Cloud services and resources in the account. This principal is
+called the root user. As long as you have an open account with AWS, the root user for that
+relationship will persist. The root user can be used for both console and programmatic access
+to AWS resources.
+
+	IAM USER:You may create separate IAM users for each member of your operations team
+so they can interact with the console and use the CLI.IAM users can be created by principals with IAM administrative privileges at any time
+through the AWS Management Console, CLI, or SDKs. Users are persistent in that there is no
+expiration period; they are permanent entities that exist until an IAM administrator takes an
+action to delete them.
+
+	Roles/Temporary Security Tokens: Roles are used to grant specific privileges to specific actors
+for a set duration of time. These actors can be authenticated by AWS or some trusted external
+system. When one of these actors assumes a role, AWS provides the actor with a temporary
+security token from the AWS Security Token Service (STS) that the actor can use to access
+AWS Cloud services. Requesting a temporary security token requires specifying how long the
+token will exist before it expires. The range of a temporary security token lifetime is 15
+minutes to 36 hours.
+
+The AWS Security Token Service (STS) is a web service that enables you to request temporary,
+limited-privilege credentials for AWS Identity and Access Management (IAM) users or for users that you authenticate (federated users).
+Temporary security credentials are not stored with the user but are generated dynamically and provided to the user when requested. 
+When (or even before) the temporary security credentials expire, the user can request new credentials,
+ as long as the user requesting them still has permissions to do so.
+Temporary security credentials are generated by AWS STS. By default, AWS STS is a global service with a single endpoint at https://sts.amazonaws.com. 
+However, you can also choose to make AWS STS API calls to endpoints in any other supported Region.
+This can reduce latency (server lag) by sending the requests to servers in a Region that is geographically closer to you. 
+No matter which Region your credentials come from, they work globally.
+
+Roles and temporary security tokens enable a number of use cases:
+Amazon EC2 Roles—Granting permissions to applications running on an Amazon EC2
+instance.
+Cross-Account Access—Granting permissions to users from other AWS accounts,
+whether you control those accounts or not.
+Federation—Granting permissions to users authenticated by a trusted external system.
+
+
+
+Note:
+
+1.If an IAM user doesnot have admin access or access of creating IAM users, then he won't be able to change his own password.
+2.Deny always overrides allow.
+3.puttygen is used to convert ur downloaded key from .pem to .ppk
+4.logging in to aws via CLI:
+aws configure
+or
+ls -la .aws/
+cd .aws/
+ls
+cat credentials ( here are the credentials located)
+
+Changing these credentials:
+vi credentials
+
+
+
+
+
+
+ 
