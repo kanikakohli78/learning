@@ -1,0 +1,12 @@
+NAT Gateway
+A NAT gateway is an Amazon managed resource that is designed to operate just like a NAT
+instance, but it is simpler to manage and highly available within an Availability Zone.
+
+To allow instances within a private subnet to access Internet resources through the IGW via a
+NAT gateway, you must do the following:
+Configure the route table associated with the private subnet to direct Internet-bound
+traffic to the NAT gateway (for example, nat-1a2b3c4d).
+Allocate an EIP and associate it with the NAT gateway.
+
+16.Virtual Private Gateways (VPGs), Customer Gateways (CGWs),
+and Virtual Private Networks (VPNs)
