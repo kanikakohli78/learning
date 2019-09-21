@@ -262,25 +262,3 @@ Federation—Granting permissions to users authenticated by a trusted external s
 
 
 
-Note:
-
-1.If an IAM user doesnot have admin access or access of creating IAM users, then he won't be able to change his own password.
-2.Deny always overrides allow.
-3.puttygen is used to convert ur downloaded key from .pem to .ppk
-4.logging in to aws via CLI:
-aws configure
-or
-ls -la .aws/
-cd .aws/
-ls
-cat credentials ( here are the credentials located)
-
-Changing these credentials:
-vi credentials
-
-
-
-
-
-
- 
